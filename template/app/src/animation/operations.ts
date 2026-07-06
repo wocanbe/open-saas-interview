@@ -10,6 +10,7 @@ import type {
 } from "wasp/server/operations";
 import * as z from "zod";
 import { ensureArgsSchemaOrThrowHttpError } from "../server/validation";
+import { recordAnimation } from "../server/recordingService";
 
 const openAi = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
@@ -198,33 +199,19 @@ Requirements:
 }
 
 async function submitToRecordingService(jobId: string, htmlContent: string) {
-  const recordingServiceUrl = env.RECORDING_SERVICE_URL || "http://localhost:3001";
-  
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), RECORDING_TIMEOUT_MS);
+    const result = await recordAnimation(jobId, htmlContent, 10);
+    
+    console.log("Recording completed:", result);
 
-    const response = await fetch(`${recordingServiceUrl}/api/record`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    await prisma.animationJob.update({
+      where: { id: jobId },
+      data: {
+        status: "completed" as AnimationStatus,
+        webmS3Key: result.webmPath,
+        m3u8S3Key: result.m3u8Path || null,
       },
-      body: JSON.stringify({
-        jobId,
-        htmlContent,
-        duration: 10,
-      }),
-      signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Recording service returned ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log("Recording submitted:", result);
 
   } catch (error) {
     console.error("Failed to submit to recording service:", error);

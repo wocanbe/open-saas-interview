@@ -1,5 +1,6 @@
 import * as z from "zod";
 
 export const animationEnvSchema = z.object({
-  RECORDING_SERVICE_URL: z.string().url().optional().default("http://localhost:3001"),
+  RECORDING_OUTPUT_DIR: z.string().optional().default("/app/recording-output"),
+  PUPPETEER_IMAGE: z.string().optional().default("ghcr.io/puppeteer/puppeteer:latest"),
 });
