@@ -7,7 +7,7 @@ import { env, prisma } from "wasp/server";
 const execPromise = promisify(exec);
 
 const OUTPUT_DIR = env.RECORDING_OUTPUT_DIR || "/app/recording-output";
-const DOCKER_IMAGE = env.PUPPETEER_IMAGE || "ghcr.io/puppeteer/puppeteer:latest";
+const DOCKER_IMAGE = env.PUPPETEER_IMAGE || "video-recoder:latest";
 
 export interface RecordingResult {
   webmPath: string;
@@ -38,7 +38,7 @@ export async function recordAnimation(
     const webmPath = path.join(jobDir, `${jobId}.webm`);
     const m3u8Path = path.join(jobDir, `${jobId}.m3u8`);
 
-    await runPuppeteerContainer(jobId, jobDir, htmlFilePath, webmPath, duration);
+    await runVideoRecoderContainer(jobId, jobDir, htmlFilePath, duration);
 
     console.log(`Recording completed for job: ${jobId}`);
 
@@ -60,59 +60,24 @@ export async function recordAnimation(
   }
 }
 
-async function runPuppeteerContainer(
+async function runVideoRecoderContainer(
   jobId: string,
   jobDir: string,
   htmlFilePath: string,
-  webmPath: string,
   duration: number
 ): Promise<void> {
-  console.log(`Starting Docker container for job: ${jobId}`);
+  console.log(`Starting video-recoder container for job: ${jobId}`);
 
-  const frameRate = 30;
-  const framesDir = "/tmp/frames";
-  
   const dockerCommand = `docker run --rm \
     -v ${jobDir}:/workspace \
     -e PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable \
     ${DOCKER_IMAGE} \
-    bash -c "
-      mkdir -p ${framesDir} && \
-      node -e \"
-        const puppeteer = require('puppeteer');
-        const fs = require('fs');
-        const path = require('path');
-        
-        async function run() {
-          const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--window-size=1280,720']
-          });
-          const page = await browser.newPage();
-          await page.setViewport({ width: 1280, height: 720 });
-          await page.goto('file:///workspace/index.html', { waitUntil: 'networkidle0' });
-          await new Promise(r => setTimeout(r, 1000));
-          
-          const totalFrames = ${duration} * ${frameRate};
-          const frameInterval = 1000 / ${frameRate};
-          
-          for (let i = 0; i < totalFrames; i++) {
-            await page.screenshot({ path: path.join('${framesDir}', \\\"frame_\\\" + i.toString().padStart(5, '0') + '.png') });
-            await new Promise(r => setTimeout(r, frameInterval));
-          }
-          
-          await browser.close();
-        }
-        run().catch(e => { console.error(e); process.exit(1); });
-      \" && \
-      ffmpeg -framerate ${frameRate} -i ${framesDir}/frame_%05d.png -c:v libvpx-vp9 -crf 30 -b:v 0 -pix_fmt yuv420p /workspace/${jobId}.webm && \
-      ffmpeg -i /workspace/${jobId}.webm -c:v libx264 -c:a aac -strict -2 -hls_time 2 -hls_list_size 0 -hls_segment_filename /workspace/${jobId}_%03d.ts /workspace/${jobId}.m3u8
-    "`;
+    ${jobId} /workspace/index.html ${duration}`;
 
-  console.log("Running Docker command...");
+  console.log("Running Docker command:", dockerCommand);
   
   const { stdout, stderr } = await execPromise(dockerCommand, {
-    timeout: duration * 1000 + 60000,
+    timeout: duration * 1000 + 120000,
   });
 
   if (stdout) {
