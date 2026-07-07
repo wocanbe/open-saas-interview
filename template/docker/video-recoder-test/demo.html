@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Night</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    overflow:hidden;
+    height:100vh;
+    background:linear-gradient(#050816,#0b1d4d,#162d73);
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+canvas{
+    position:absolute;
+    left:0;
+    top:0;
+}
+
+.title{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    color:white;
+    text-align:center;
+    animation:float 4s ease-in-out infinite;
+    z-index:2;
+}
+
+.title h1{
+    font-size:64px;
+    text-shadow:0 0 20px cyan;
+}
+
+.title p{
+    margin-top:20px;
+    font-size:22px;
+    opacity:.8;
+}
+
+@keyframes float{
+    0%{transform:translate(-50%,-50%)}
+    50%{transform:translate(-50%,-56%)}
+    100%{transform:translate(-50%,-50%)}
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="title">
+    <h1>✨ Hello World ✨</h1>
+    <p>HTML + Canvas Animation</p>
+</div>
+
+<script>
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+}
+resize();
+window.onresize=resize;
+
+// 星星
+let stars=[];
+
+for(let i=0;i<250;i++){
+    stars.push({
+        x:Math.random()*canvas.width,
+        y:Math.random()*canvas.height,
+        r:Math.random()*2,
+        a:Math.random(),
+        d:Math.random()*0.02+0.005
+    });
+}
+
+// 粒子
+let particles=[];
+
+window.addEventListener("mousemove",e=>{
+    for(let i=0;i<2;i++){
+        particles.push({
+            x:e.clientX,
+            y:e.clientY,
+            r:Math.random()*5+2,
+            life:60,
+            dx:(Math.random()-0.5)*2,
+            dy:(Math.random()-0.5)*2
+        });
+    }
+});
+
+let moonX=100;
+
+function shootingStar(){
+
+    if(Math.random()<0.01){
+
+        let x=Math.random()*canvas.width*0.8;
+        let y=Math.random()*canvas.height*0.3;
+
+        let len=200;
+
+        ctx.beginPath();
+        let g=ctx.createLinearGradient(x,y,x+len,y+len);
+        g.addColorStop(0,"white");
+        g.addColorStop(1,"transparent");
+        ctx.strokeStyle=g;
+        ctx.lineWidth=2;
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+len,y+len);
+        ctx.stroke();
+    }
+}
+
+function animate(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // 月亮
+    moonX+=0.05;
+    if(moonX>canvas.width+100)
+        moonX=-100;
+
+    ctx.beginPath();
+    ctx.arc(moonX,100,45,0,Math.PI*2);
+    ctx.fillStyle="#fff9c4";
+    ctx.shadowBlur=40;
+    ctx.shadowColor="#fff9c4";
+    ctx.fill();
+    ctx.shadowBlur=0;
+
+    // 星星
+    stars.forEach(s=>{
+
+        s.a+=s.d;
+
+        if(s.a>1||s.a<0)
+            s.d=-s.d;
+
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle="rgba(255,255,255,"+s.a+")";
+        ctx.fill();
+    });
+
+    // 粒子
+    particles.forEach((p,index)=>{
+
+        p.x+=p.dx;
+        p.y+=p.dy;
+        p.life--;
+
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle="rgba(0,255,255,"+(p.life/60)+")";
+        ctx.fill();
+
+        if(p.life<=0)
+            particles.splice(index,1);
+    });
+
+    shootingStar();
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+</script>
+
+</body>
+</html>
