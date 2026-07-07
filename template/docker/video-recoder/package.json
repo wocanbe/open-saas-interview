@@ -1,10 +1,21 @@
 {
-  "name": "video-recoder",
-  "version": "1.0.0",
-  "description": "HTML to video recorder using Puppeteer",
+  "name": "video-render",
+  "version": "2.0.0",
+  "description": "Render HTML animation to MP4 / HLS using Puppeteer and FFmpeg",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "test": "bash test.sh",
+    "clean": "rimraf output"
+  },
   "dependencies": {
     "dotenv": "^17.0.0",
-    "puppeteer": "^24.15.0",
+    "puppeteer": "^25.3.0",
     "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1"
   }
 }
