@@ -2,9 +2,9 @@
 
 set -e
 
-echo "=== Building Docker image ==="
-cd "$(dirname "$0")/../video-recoder"
-docker build -t video-recoder:latest .
+# echo "=== Building Docker image ==="
+# cd "$(dirname "$0")/../video-recoder"
+# docker build -t video-recoder:latest .
 
 echo "=== Running test ==="
 cd "$(dirname "$0")"
