@@ -58,6 +58,26 @@ async function captureFrames(page, frameDir, fps, duration) {
     }
     console.log();
 }
+async function pngToWebm(frameDir, outputWebm, fps) {
+    await runCommand("ffmpeg", [
+        "-y",
+        "-framerate",
+        String(fps),
+        "-i",
+        path.join(frameDir, "frame_%05d.png"),
+        "-c:v",
+        "libvpx-vp9",
+
+        "-pix_fmt",
+        "yuv420p",
+
+        "-b:v",
+        "0",
+        "-crf",
+        "30",
+        outputWebm
+    ]);
+}
 async function pngToMp4(frameDir, outputMp4, fps) {
     await runCommand("ffmpeg", [
         "-y",

@@ -10,7 +10,7 @@ const OUTPUT_DIR = env.RECORDING_OUTPUT_DIR || "/app/recording-output";
 const DOCKER_IMAGE = env.PUPPETEER_IMAGE || "video-recoder:latest";
 
 export interface RecordingResult {
-  webmPath: string;
+  mp4Path: string;
   m3u8Path?: string;
   tsPaths?: string[];
 }
@@ -35,14 +35,14 @@ export async function recordAnimation(
 
     console.log(`HTML file written to: ${htmlFilePath}`);
 
-    const webmPath = path.join(jobDir, `${jobId}.webm`);
+    const mp4Path = path.join(jobDir, `${jobId}.mp4`);
     const m3u8Path = path.join(jobDir, `${jobId}.m3u8`);
 
     await runVideoRecoderContainer(jobId, jobDir, htmlFilePath, duration);
 
     console.log(`Recording completed for job: ${jobId}`);
 
-    const result: RecordingResult = { webmPath };
+    const result: RecordingResult = { mp4Path };
 
     if (fs.existsSync(m3u8Path)) {
       result.m3u8Path = m3u8Path;
@@ -68,11 +68,16 @@ async function runVideoRecoderContainer(
 ): Promise<void> {
   console.log(`Starting video-recoder container for job: ${jobId}`);
 
-  const dockerCommand = `docker run --rm \
-    -v ${jobDir}:/workspace \
-    -e PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable \
+  const dockerCommand = `MSYS_NO_PATHCONV=1 docker run --rm \
+    -v ${jobDir}:/home/pptruser/output \
     ${DOCKER_IMAGE} \
-    ${jobId} /workspace/index.html ${duration}`;
+    ${jobId} \
+    /home/pptruser/output/index.html \
+    ${duration} \
+    30 \
+    1280 \
+    720 \
+    /home/pptruser/output`;
 
   console.log("Running Docker command:", dockerCommand);
   
